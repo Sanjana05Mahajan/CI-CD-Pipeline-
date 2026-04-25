@@ -5,13 +5,24 @@ phases:
     runtime-versions:
       nodejs: 18
     commands:
-      - echo Installing dependencies...
       - npm install
 
   build:
     commands:
-      - echo Build started...
-      - echo No build step required
+      - echo Build successful
+
+  post_build:
+    commands:
+      - echo Deploying to EC2
+      - mkdir -p ~/.ssh
+      - echo "$EC2_KEY" > ~/.ssh/key.pem
+      - chmod 400 ~/.ssh/key.pem
+      - scp -o StrictHostKeyChecking=no -i ~/.ssh/key.pem -r . ubuntu@$EC2_HOST:/home/ubuntu/node-app
+      - ssh -o StrictHostKeyChecking=no -i ~/.ssh/key.pem ubuntu@$EC2_HOST "cd /home/ubuntu/node-app && npm install && pkill node || true && nohup node app.js > output.log 2>&1 &"
+
+artifacts:
+  files:
+    - '**/*'
 
   post_build:
     commands:
